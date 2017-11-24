@@ -136,7 +136,11 @@ class IGrillV2Peripheral(IDevicePeripheral):
         for probe_num, temp_char in self.temp_chars.items():
             temp = ord(temp_char.read()[1]) * 256
             temp += ord(temp_char.read()[0])
-            temps[probe_num] = float(temp)
+
+            if temp == 63536:
+                temp = 0
+
+            temps[probe_num] = int(temp)
 
         return temps
 
