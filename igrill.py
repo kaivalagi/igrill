@@ -2,6 +2,7 @@ import bluepy.btle as btle
 import random
 
 from crypto import encrypt, decrypt
+from struct import *
 
 class UUIDS:
     FIRMWARE_VERSION   = btle.UUID("64ac0001-4a4b-4b58-9f37-94d3c52ffdf7")
@@ -125,12 +126,56 @@ class IGrillV2Peripheral(IDevicePeripheral):
         # find characteristics for battery and temperature
         self.battery_char = self.characteristic(UUIDS.BATTERY_LEVEL)
         self.temp_chars = {}
+        self.threshold_chars = {}
 
         for probe_num in range(1,5):
             temp_char_name = 'PROBE{}_TEMPERATURE'.format(probe_num)
             temp_char = self.characteristic(getattr(UUIDS, temp_char_name))
             self.temp_chars[probe_num] = temp_char
+        for probe_num in range(1,5):
+            threshold_char_name = 'PROBE{}_THRESHOLD'.format(probe_num)
+            threshold_char = self.characteristic(getattr(UUIDS, threshold_char_name))
+            self.threshold_chars[probe_num] = threshold_char
+        
+        testChar = self.characteristic(getattr(UUIDS, 'PROBE1_THRESHOLD'))
+        message = '\x00\x00\xC3\x00' # 0 - 195
+        testChar.write(message, True)
+        
+        testChar = self.characteristic(getattr(UUIDS, 'PROBE2_THRESHOLD'))
+        message = '\x00\x00\xA5\x00' # 0 - 165
+        testChar.write(message, True)
 
+        testChar = self.characteristic(getattr(UUIDS, 'PROBE3_THRESHOLD'))
+        message = '\x00\x00\xC8\x00' # 0 - 200
+        testChar.write(message, True)
+
+        testChar = self.characteristic(getattr(UUIDS, 'PROBE4_THRESHOLD'))
+        message = '\x00\x00\xFA\x00' # 0 - 250
+        testChar.write(message, True)
+                
+        
+
+    def get_thresholds(self):
+        thresholds = [[0 for x in range(2)] for y in range(5)] 
+        
+        for probe_num, threshold_char in self.threshold_chars.items():
+            threshold_max = 0
+            threshold_min = 0
+
+            # The value appears to always be chr(48) if a threshold isn't set
+
+            if threshold_char.read()[0] != chr(48):
+                threshold_min = ord(threshold_char.read()[1]) * 256
+                threshold_min += ord(threshold_char.read()[0])
+                
+            if threshold_char.read()[2] != chr(48):
+                threshold_max = ord(threshold_char.read()[3])*256
+                threshold_max += ord(threshold_char.read()[2])
+            
+            thresholds[probe_num][0] = int(threshold_min)
+            thresholds[probe_num][1] = int(threshold_max)
+            
+        return thresholds
     def read_temperature(self):
         temps = {}
         for probe_num, temp_char in self.temp_chars.items():
