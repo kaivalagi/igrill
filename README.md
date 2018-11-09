@@ -1,5 +1,5 @@
 # iGrill-to-Azure-IoT
-Push iGrill2 data to Azure IoT Hub
+Push iGrill2 data to Azure IoT Hubs
 
 ### Requires
 * [bluepy](https://github.com/IanHarvey/bluepy)
